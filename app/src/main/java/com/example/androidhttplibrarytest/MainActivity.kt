@@ -3,13 +3,15 @@ package com.example.androidhttplibrarytest
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.View
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import com.android.volley.RequestQueue
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.example.androidhttplibrarytest.databinding.ActivityMainBinding
 import com.example.androidhttplibrarytest.retrofit.PapagoRes
 import com.example.androidhttplibrarytest.retrofit.RetrofitInstance
-import com.google.gson.JsonObject
+import com.example.androidhttplibrarytest.volley.VolleyInstance
+import com.android.volley.Request as VolleyRequest
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -41,25 +43,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun translateToEnglishWithRetrofit(text: String) {
-        val tag = "call-retrofit"
+        val TAG = "call-retrofit"
 
         RetrofitInstance.papagoService.postTranslateToEnglish(text = text).enqueue(object : Callback<PapagoRes> {
             override fun onResponse(call: Call<PapagoRes>, response: Response<PapagoRes>) {
                 if(response.isSuccessful)
                     binding.tvTarget.text = response.body()!!.message.result.translatedText
                 else
-                    Log.e(tag, response.raw().toString())
+                    Log.e(TAG, response.raw().toString())
             }
 
             override fun onFailure(call: Call<PapagoRes>, t: Throwable) {
-                Log.e(tag, t.message.toString())
+                Log.e(TAG, t.message.toString())
             }
         })
     }
 
 
     private fun translateToJapaneseWithOkHttp(text: String) {
-        val tag = "call-okHttp"
+        val TAG = "call-okHttp"
 
         val client = OkHttpClient()
 
@@ -83,17 +85,38 @@ class MainActivity : AppCompatActivity() {
                     val translatedText = jsonObject.getJSONObject("message").getJSONObject("result").getString("translatedText")
                     binding.tvTarget.text = translatedText
                 } else {
-                    Log.e(tag, response.message)
+                    Log.e(TAG, response.message)
                 }
             }
 
             override fun onFailure(call: okhttp3.Call, e: IOException) {
-                Log.e(tag, e.message.toString())
+                Log.e(TAG, e.message.toString())
             }
         })
     }
 
     private fun translateToFrenchWithVolley(text: String) {
+        val TAG = "call-volley"
 
+        val request = object : StringRequest(Method.POST, BASE_URL + "v1/papago/n2mt", {
+            val translatedText = JSONObject(it).getJSONObject("message").getJSONObject("result").getString("translatedText")
+            binding.tvTarget.text = translatedText
+        }, {
+            Log.e(TAG, it.message.toString())
+        }) {
+            override fun getHeaders(): MutableMap<String, String> {
+                return hashMapOf(
+                    "X-Naver-Client-Id" to CLIENT_ID,
+                    "X-Naver-Client-Secret" to CLIENT_SECRET
+                )
+            }
+
+            override fun getParams(): MutableMap<String, String>? {
+                return hashMapOf("source" to "ko", "target" to "fr", "text" to text)
+            }
+        }
+
+        request.setShouldCache(false)
+        VolleyInstance.requestQueue!!.add(request)
     }
 }
