@@ -9,9 +9,15 @@ import android.widget.ArrayAdapter
 import com.example.androidhttplibrarytest.databinding.ActivityMainBinding
 import com.example.androidhttplibrarytest.retrofit.PapagoRes
 import com.example.androidhttplibrarytest.retrofit.RetrofitInstance
+import com.google.gson.JsonObject
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -51,8 +57,40 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun translateToJapaneseWithOkHttp(text: String) {
 
+    private fun translateToJapaneseWithOkHttp(text: String) {
+        val tag = "call-okHttp"
+
+        val client = OkHttpClient()
+
+        val formBody = FormBody.Builder()
+            .add("source", "ko")
+            .add("target", "ja")
+            .add("text", text)
+            .build()
+
+        val request = Request.Builder()
+            .header("X-Naver-Client-Id", CLIENT_ID)
+            .header("X-Naver-Client-Secret", CLIENT_SECRET)
+            .url(BASE_URL + "v1/papago/n2mt")
+            .post(formBody)
+            .build()
+
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                if(response.isSuccessful) {
+                    val jsonObject = JSONObject(response.body!!.string())
+                    val translatedText = jsonObject.getJSONObject("message").getJSONObject("result").getString("translatedText")
+                    binding.tvTarget.text = translatedText
+                } else {
+                    Log.e(tag, response.message)
+                }
+            }
+
+            override fun onFailure(call: okhttp3.Call, e: IOException) {
+                Log.e(tag, e.message.toString())
+            }
+        })
     }
 
     private fun translateToFrenchWithVolley(text: String) {
