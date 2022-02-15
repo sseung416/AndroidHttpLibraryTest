@@ -22,5 +22,40 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, resources.getStringArray(R.array.spinner_target))
+
+        binding.btnTranslate.setOnClickListener {
+            val text = binding.etText.text.toString()
+
+            when(binding.spinner.selectedItemPosition) {
+                0 -> translateToEnglishWithRetrofit(text)
+                1 -> translateToJapaneseWithOkHttp(text)
+                2 -> translateToFrenchWithVolley(text)
+            }
+        }
+    }
+
+    private fun translateToEnglishWithRetrofit(text: String) {
+        val tag = "call-retrofit"
+
+        RetrofitInstance.papagoService.postTranslateToEnglish(text = text).enqueue(object : Callback<PapagoRes> {
+            override fun onResponse(call: Call<PapagoRes>, response: Response<PapagoRes>) {
+                if(response.isSuccessful)
+                    binding.tvTarget.text = response.body()!!.message.result.translatedText
+                else
+                    Log.e(tag, response.raw().toString())
+            }
+
+            override fun onFailure(call: Call<PapagoRes>, t: Throwable) {
+                Log.e(tag, t.message.toString())
+            }
+        })
+    }
+
+    private fun translateToJapaneseWithOkHttp(text: String) {
+
+    }
+
+    private fun translateToFrenchWithVolley(text: String) {
+
     }
 }
